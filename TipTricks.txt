@@ -1,0 +1,145 @@
+
+https://github.com/Kilill/HID_SteeringWheel
+
+Software
+
+Its based it on the DigiJoystick example from the Arduino Digispark package. Since i had to modify it i added it as a library in the lib directory.
+
+The original DigiJoystick example was configured with 6 8Bit analog axis and 14 buttons 8Bit is a bit low and i only needed 3 Axis and 4 buttons. 
+So converted the original DigiJoystic.h into a Wheel.h and modified the orginal USB Hid Report descriptor to have 3 16Bit axis and 4 buttons this still
+ fits within the 8 byte constraint of a simple usb hid report.
+
+// Deexa stering wheel and pedals originally only had 2 axis, the steering weel itself and the
+// the accelerator and break pedals counter connectet. modifed to now have separate axis
+// The original Joystick setup only 8bit for each axis but the adc as a 10bit range
+// descriptor also modifed to have 16bit axis
+
+// Hid Reort Descriptot
+// !!!! if you change the length of this you must update USB_CFG_HID_REPORT_DESCRIPTOR_LENGTH  in usbconfig.h
+const unsigned char gcn64_usbHidReportDescriptor[] PROGMEM = {
+    0x05, 0x01,                    // USAGE_PAGE (Generic Desktop)
+    0x09, 0x05,                    // USAGE (Game Pad)
+    0xa1, 0x01,                    // COLLECTION (Application)
+    0x09, 0x01,                    //   USAGE (Pointer)
+    0xa1, 0x00,                    //   COLLECTION (Physical)
+    0x05, 0x01,                    //     USAGE_PAGE (Generic Desktop)
+    0x09, 0x30,                    //     USAGE (X) (steering wheel)
+    0x09, 0x31,                    //     USAGE (Y) (accellerator)
+    0x09, 0x33,                    //     USAGE (Rx) (break)
+    0x15, 0x00,                    //     LOGICAL_MINIMUM (0)
+    0x26, 0xff, 0x03,              //     LOGICAL_MAXIMUM (32767)
+    0x75, 0x10,                    //     REPORT_SIZE (16)
+    0x95, 0x03,                    //     REPORT_COUNT (3)
+    0x81, 0x02,                    //     INPUT (Data,Var,Abs)
+    0xc0,                          //     END_COLLECTION
+    0x05, 0x09,                    //   USAGE_PAGE (Button)
+    0x19, 0x01,                    //   USAGE_MINIMUM (Button 1)  
+    0x29, 0x04,                    //   USAGE_MAXIMUM (Button 4) 2 buttons on wheel and two on the shifter stick
+    0x15, 0x00,                    //   LOGICAL_MINIMUM (0)
+    0x25, 0x01,                    //   LOGICAL_MAXIMUM (1)
+    0x75, 0x01,                    //   REPORT_SIZE (1)
+    0x95, 0x10,                    //   REPORT_COUNT (16)
+    0x81, 0x02,                    //   INPUT (Data,Var,Abs)
+    0xc0                           //     END_COLLECTION
+};
+
+Génère une erreur driver dans W10 Pro
+
+=========================================================================================================================
+
+
+Can a USB HID keyboard report be more than 8 bytes in size? If yes what else is it related with except the report descriptor.
+
+I would like to change the size of report and I'll accordingly modify the report descriptor. Is that all or should I modify any other descriptors as well.
+
+I also have a doubt that if I increase the report size do I need to modify the endpoint buffer. Can someone help me understanding the relation between endpoint and report size?
+
+----------------------------------------------------------------
+
+
+
+
+HID Report descriptor is a descriptor for data stored in the reports that gets in and out of your device. Host knows the size of input reports by parsing this descriptor. If you want to change any report size, you need to modify its descriptor accordingly.
+
+HID input reports are transported through USB Interrupt endpoints. Here you have limitations depending not on HID, but on USB version used: 8 bytes for low speed, 64 bytes for full speed, 1024 bytes for high speed. You should set relevant value in wMaxPacketSize field of the matching endpoint descriptor.
+
+Your host application should submit a large-enough buffer to your host stack, of course.
+
+
+=====================================================================================================================
+
+
+https://usbmadesimple.co.uk/ums_5.htm
+
+https://www.beyondlogic.org/usbnutshell/usb4.shtml
+
+
+======================================================================================================================
+
+HID descriptor - ChatGPT:
+
+// Exemple générique de HID descriptor pour un volant USB
+
+const uint8_t hidDescriptor[] = {
+  // Interface Descriptor
+  0x09,         // bLength: Length of this descriptor
+  0x04,         // bDescriptorType: Interface descriptor type
+  0x00,         // bInterfaceNumber: Number of this interface (0-based)
+  0x00,         // bAlternateSetting: Alternate setting number for this interface
+  0x02,         // bNumEndpoints: Number of endpoints used by this interface (excluding control endpoint)
+  0x03,         // bInterfaceClass: HID Class
+  0x00,         // bInterfaceSubClass: No subclass code
+  0x00,         // bInterfaceProtocol: No protocol code
+  0x00,         // iInterface: Index of string descriptor describing this interface (0-based)
+
+  // HID Descriptor
+  0x09,         // bLength: Length of HID descriptor
+  0x21,         // bDescriptorType: HID descriptor type
+  0x10, 0x01,   // bcdHID: HID specification version (1.10)
+  0x00,         // bCountryCode: Country code (0x00 for not localized)
+  0x01,         // bNumDescriptors: Number of HID class descriptors to follow
+  0x22,         // bDescriptorType: Report descriptor type
+  sizeof(reportDescriptor), 0x00,  // wDescriptorLength: Total length of report descriptor
+
+  // Endpoint Descriptor (Input)
+  0x07,         // bLength: Length of endpoint descriptor
+  0x05,         // bDescriptorType: Endpoint descriptor type
+  0x81,         // bEndpointAddress: Endpoint address (IN endpoint 1)
+  0x03,         // bmAttributes: Interrupt endpoint
+  0x08, 0x00,   // wMaxPacketSize: Maximum packet size for this endpoint (8 bytes)
+  0x0A,         // bInterval: Polling interval (in frames) for this endpoint (10 ms)
+
+  // Endpoint Descriptor (Output)
+  0x07,         // bLength: Length of endpoint descriptor
+  0x05,         // bDescriptorType: Endpoint descriptor type
+  0x02,         // bEndpointAddress: Endpoint address (OUT endpoint 2)
+  0x03,         // bmAttributes: Interrupt endpoint
+  0x08, 0x00,   // wMaxPacketSize: Maximum packet size for this endpoint (8 bytes)
+  0x0A,         // bInterval: Polling interval (in frames) for this endpoint (10 ms)
+};
+
+// Report Descriptor (exemple générique pour un volant simple)
+const uint8_t reportDescriptor[] = {
+  0x05, 0x01,        // Usage Page (Generic Desktop)
+  0x09, 0x04,        // Usage (Joystick)
+  0xA1, 0x01,        // Collection (Application)
+
+  // Axes analogiques
+  0x15, 0x00,        // Logical Minimum (0)
+  0x26, 0xFF, 0x00,  // Logical Maximum (255)
+  0x75, 0x08,        // Report Size (8 bits)
+  0x95, 0x02,        // Report Count (2 axes)
+  0x81, 0x02,        // Input (Data, Variable, Absolute) for les 2 axes (X & Y)
+  
+  // Boutons
+  0x05, 0x09,        // Usage Page (Button)
+  0x19, 0x01,        // Usage Minimum (Button 1)
+  0x29, 0x08,        // Usage Maximum (Button 8)
+  0x15, 0x00,        // Logical Minimum (0)
+  0x25, 0x01,        // Logical Maximum (1)
+  0x75, 0x01,        // Report Size (1 bit)
+  0x95, 0x08,        // Report Count (8 buttons)
+  0x81, 0x02,        // Input (Data, Variable, Absolute) for les 8 boutons
+
+  0xC0,              // End Collection
+};
