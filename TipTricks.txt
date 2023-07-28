@@ -9,6 +9,9 @@ The original DigiJoystick example was configured with 6 8Bit analog axis and 14 
 So converted the original DigiJoystic.h into a Wheel.h and modified the orginal USB Hid Report descriptor to have 3 16Bit axis and 4 buttons this still
  fits within the 8 byte constraint of a simple usb hid report.
 
+Nota SL: on peut mettre 16 boutons puisque les 3 axes analogiques prennent 3x2=6_octets, il reste 2_octets donc 16_bits pour les boutons.
+Ou eventuellement un quatrieme analogique sur 1 octet +/-127 ou 0-255
+
 // Deexa stering wheel and pedals originally only had 2 axis, the steering weel itself and the
 // the accelerator and break pedals counter connectet. modifed to now have separate axis
 // The original Joystick setup only 8bit for each axis but the adc as a 10bit range
@@ -43,7 +46,7 @@ const unsigned char gcn64_usbHidReportDescriptor[] PROGMEM = {
     0xc0                           //     END_COLLECTION
 };
 
-Génère une erreur driver dans W10 Pro
+Génère une erreur driver dans W10 Pro : Logique il faut revoir le packing des bytes dans notify_hid_report
 
 =========================================================================================================================
 
@@ -55,8 +58,6 @@ I would like to change the size of report and I'll accordingly modify the report
 I also have a doubt that if I increase the report size do I need to modify the endpoint buffer. Can someone help me understanding the relation between endpoint and report size?
 
 ----------------------------------------------------------------
-
-
 
 
 HID Report descriptor is a descriptor for data stored in the reports that gets in and out of your device. Host knows the size of input reports by parsing this descriptor. If you want to change any report size, you need to modify its descriptor accordingly.
